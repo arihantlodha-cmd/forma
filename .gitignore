@@ -32,3 +32,4 @@ forma.db
 # Logs
 *.log
 .vercel
+node_modules/
