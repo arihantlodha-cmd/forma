@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Forma — Spatial Reasoning Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    :root {
+      --bg:        #000000;
+      --bg2:       #0a0a0a;
+      --surf:      #111111;
+      --surf2:     #161616;
+      --border:    #1f1f1f;
+      --border2:   #2a2a2a;
+      --text:      #ffffff;
+      --text2:     #a1a1aa;
+      --text3:     #71717a;
+      --text4:     #3f3f46;
+      --accent:    #ffffff;
+      --purple:    #a855f7;
+      --purple2:   #7c3aed;
+      --blue:      #3b82f6;
+      --green:     #22c55e;
+      --red:       #ef4444;
+      --font:      'Inter', system-ui, -apple-system, sans-serif;
+      --mono:      'JetBrains Mono', monospace;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      line-height: 1.6;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── NOISE OVERLAY ──────────────────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      opacity: 0.4;
+    }
+
+    /* ─── GLOW ORBS ──────────────────────────────────────────────────── */
+    .orb {
+      position: fixed; border-radius: 50%;
+      filter: blur(120px); pointer-events: none; z-index: 0;
+    }
+    .orb-1 {
+      width: 600px; height: 600px;
+      top: -200px; left: -100px;
+      background: radial-gradient(circle, rgba(168,85,247,0.12) 0%, transparent 70%);
+    }
+    .orb-2 {
+      width: 500px; height: 500px;
+      top: 20%; right: -100px;
+      background: radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%);
+    }
+    .orb-3 {
+      width: 400px; height: 400px;
+      bottom: 10%; left: 20%;
+      background: radial-gradient(circle, rgba(168,85,247,0.06) 0%, transparent 70%);
+    }
+
+    section, nav, footer { position: relative; z-index: 1; }
+
+    /* ─── NAV ─────────────────────────────────────────────────────────── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 2rem;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      font-size: 1rem; font-weight: 800; letter-spacing: -0.04em;
+      color: var(--text);
+    }
+    .nav-links {
+      display: flex; align-items: center; gap: 2rem;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 0.8125rem; font-weight: 500; color: var(--text3);
+      text-decoration: none; transition: color 0.15s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-right { display: flex; align-items: center; gap: 0.75rem; }
+    .btn-nav {
+      font-size: 0.8125rem; font-weight: 600; padding: 0.375rem 1rem;
+      border-radius: 6px; cursor: pointer; text-decoration: none;
+      transition: all 0.15s; border: 1px solid var(--border2);
+      background: none; color: var(--text2);
+    }
+    .btn-nav:hover { color: var(--text); border-color: var(--text4); }
+    .btn-nav-primary {
+      background: var(--text); color: #000;
+      border-color: var(--text);
+    }
+    .btn-nav-primary:hover { background: #e4e4e7; border-color: #e4e4e7; }
+
+    /* ─── HERO ────────────────────────────────────────────────────────── */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center;
+      padding: 8rem 1.5rem 6rem;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: rgba(168,85,247,0.08);
+      border: 1px solid rgba(168,85,247,0.2);
+      border-radius: 999px;
+      padding: 0.3rem 0.875rem;
+      font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em;
+      color: var(--purple); text-transform: uppercase; margin-bottom: 2rem;
+    }
+    .hero-badge-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--purple); animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
+    .hero h1 {
+      font-size: clamp(2.5rem, 7vw, 5.5rem);
+      font-weight: 900; letter-spacing: -0.04em; line-height: 1.05;
+      max-width: 900px; margin: 0 auto 1.5rem;
+    }
+    .hero h1 .grad {
+      background: linear-gradient(135deg, #fff 0%, #a855f7 50%, #3b82f6 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-sub {
+      font-size: clamp(1rem, 2vw, 1.1875rem);
+      color: var(--text3); max-width: 560px; margin: 0 auto 2.5rem;
+      line-height: 1.7; font-weight: 400;
+    }
+    .hero-ctas {
+      display: flex; align-items: center; gap: 0.875rem;
+      flex-wrap: wrap; justify-content: center; margin-bottom: 4rem;
+    }
+    .btn-hero-primary {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: var(--text); color: #000;
+      font-size: 0.9375rem; font-weight: 700;
+      padding: 0.75rem 1.75rem; border-radius: 8px;
+      text-decoration: none; border: none; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-hero-primary:hover { background: #e4e4e7; transform: translateY(-1px); }
+    .btn-hero-secondary {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: none; color: var(--text2);
+      font-size: 0.9375rem; font-weight: 600;
+      padding: 0.75rem 1.5rem; border-radius: 8px;
+      text-decoration: none; border: 1px solid var(--border2);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn-hero-secondary:hover { color: var(--text); border-color: var(--text4); }
+
+    /* Stats strip */
+    .hero-stats {
+      display: flex; align-items: center; gap: 3rem;
+      justify-content: center; flex-wrap: wrap;
+    }
+    .hero-stat { text-align: center; }
+    .hero-stat-num {
+      font-size: 1.75rem; font-weight: 800; letter-spacing: -0.04em;
+      background: linear-gradient(135deg, #fff, #a1a1aa);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-stat-label { font-size: 0.75rem; color: var(--text4); font-weight: 500; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .hero-stat-sep { width: 1px; height: 36px; background: var(--border); }
+
+    /* ─── LOGO BAR ────────────────────────────────────────────────────── */
+    .logo-bar {
+      padding: 3rem 2rem; border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .logo-bar-label {
+      text-align: center; font-size: 0.75rem; font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--text4); margin-bottom: 2rem;
+    }
+    .logo-bar-logos {
+      display: flex; align-items: center; justify-content: center;
+      gap: 3.5rem; flex-wrap: wrap;
+    }
+    .logo-item {
+      font-size: 0.9375rem; font-weight: 700; color: var(--text4);
+      letter-spacing: -0.02em; transition: color 0.15s;
+      white-space: nowrap;
+    }
+    .logo-item:hover { color: var(--text3); }
+
+    /* ─── SECTION BASE ────────────────────────────────────────────────── */
+    .section { padding: 7rem 2rem; }
+    .section-label {
+      font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--purple); margin-bottom: 0.875rem;
+    }
+    .section-title {
+      font-size: clamp(1.75rem, 4vw, 3rem);
+      font-weight: 800; letter-spacing: -0.035em; line-height: 1.1;
+      margin-bottom: 1rem;
+    }
+    .section-sub {
+      font-size: 1rem; color: var(--text3); max-width: 480px;
+      line-height: 1.7;
+    }
+    .container { max-width: 1120px; margin: 0 auto; }
+
+    /* ─── FEATURES ────────────────────────────────────────────────────── */
+    .features-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
+      background: var(--border); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden; margin-top: 4rem;
+    }
+    @media(max-width:768px) { .features-grid { grid-template-columns: 1fr; } }
+    .feature-card {
+      background: var(--bg); padding: 2rem;
+      transition: background 0.2s;
+    }
+    .feature-card:hover { background: var(--surf); }
+    .feature-icon {
+      width: 40px; height: 40px; border-radius: 9px;
+      background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.2);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 1.25rem;
+    }
+    .feature-icon svg { width: 18px; height: 18px; color: var(--purple); }
+    .feature-name {
+      font-size: 1rem; font-weight: 700; letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+    .feature-desc { font-size: 0.875rem; color: var(--text3); line-height: 1.65; }
+
+    /* Wide feature */
+    .features-wide {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+      background: var(--border); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden; margin-top: 1px;
+    }
+    @media(max-width:768px) { .features-wide { grid-template-columns: 1fr; } }
+
+    /* ─── BENCHMARK ───────────────────────────────────────────────────── */
+    #benchmarks { background: var(--bg2); }
+    .bench-header {
+      display: flex; align-items: flex-end; justify-content: space-between;
+      margin-bottom: 3rem; flex-wrap: wrap; gap: 1rem;
+    }
+    .bench-note {
+      font-size: 0.75rem; color: var(--text4); font-family: var(--mono);
+      max-width: 280px; line-height: 1.6;
+    }
+
+    .bench-table {
+      width: 100%; border-collapse: collapse;
+      border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+    }
+    .bench-table thead tr { background: var(--surf); }
+    .bench-table th {
+      padding: 0.75rem 1.25rem; text-align: left;
+      font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--text4);
+      border-bottom: 1px solid var(--border);
+    }
+    .bench-table td {
+      padding: 0.875rem 1.25rem;
+      font-size: 0.875rem; color: var(--text2);
+      border-bottom: 1px solid var(--border);
+    }
+    .bench-table tbody tr:last-child td { border-bottom: none; }
+    .bench-table tbody tr { transition: background 0.15s; }
+    .bench-table tbody tr:hover { background: var(--surf); }
+    .bench-table tbody tr.highlight { background: rgba(168,85,247,0.05); }
+    .bench-table tbody tr.highlight:hover { background: rgba(168,85,247,0.09); }
+    .bench-table tbody tr.highlight td { color: var(--text); }
+    .bench-name { font-weight: 700; color: var(--text); }
+    .bench-tag {
+      display: inline-block; font-size: 0.6rem; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      background: rgba(168,85,247,0.15); color: var(--purple);
+      border: 1px solid rgba(168,85,247,0.3); border-radius: 4px;
+      padding: 1px 5px; margin-left: 6px; vertical-align: middle;
+    }
+
+    /* Bar cell */
+    .bar-cell { min-width: 160px; }
+    .bar-wrap { display: flex; align-items: center; gap: 8px; }
+    .bar-track { flex: 1; height: 4px; background: var(--surf2); border-radius: 2px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 2px; background: var(--text4); }
+    .bar-fill.good { background: var(--green); }
+    .bar-fill.mid  { background: var(--text3); }
+    .bar-val { font-size: 0.8125rem; font-family: var(--mono); color: var(--text2); min-width: 36px; text-align: right; }
+    .good-val { color: var(--green) !important; font-weight: 700; }
+    .dim { color: var(--text4); }
+
+    /* ─── TESTIMONIALS ────────────────────────────────────────────────── */
+    #testimonials { background: var(--bg); }
+    .testi-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
+      margin-top: 3.5rem;
+    }
+    @media(max-width: 900px) { .testi-grid { grid-template-columns: 1fr 1fr; } }
+    @media(max-width: 560px) { .testi-grid { grid-template-columns: 1fr; } }
+    .testi-card {
+      background: var(--surf); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.5rem;
+      display: flex; flex-direction: column; gap: 1.25rem;
+      transition: border-color 0.2s;
+    }
+    .testi-card:hover { border-color: var(--border2); }
+    .testi-stars { color: #fbbf24; font-size: 0.875rem; letter-spacing: 2px; }
+    .testi-quote {
+      font-size: 0.9375rem; line-height: 1.7; color: var(--text2);
+      font-weight: 400; flex: 1;
+    }
+    .testi-quote strong { color: var(--text); font-weight: 600; }
+    .testi-author { display: flex; align-items: center; gap: 0.75rem; }
+    .testi-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--purple2), var(--blue));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 700; color: #fff; flex-shrink: 0;
+    }
+    .testi-name { font-size: 0.875rem; font-weight: 700; }
+    .testi-role { font-size: 0.75rem; color: var(--text4); margin-top: 1px; }
+
+    /* Featured testimonial */
+    .testi-featured {
+      background: linear-gradient(135deg, rgba(168,85,247,0.08), rgba(59,130,246,0.04));
+      border-color: rgba(168,85,247,0.2);
+      grid-column: span 1;
+    }
+
+    /* ─── HOW IT WORKS ────────────────────────────────────────────────── */
+    #how { background: var(--bg2); }
+    .steps {
+      display: grid; grid-template-columns: repeat(3,1fr); gap: 0;
+      margin-top: 4rem; position: relative;
+    }
+    @media(max-width:768px) { .steps { grid-template-columns: 1fr; } }
+    .steps::before {
+      content: '';
+      position: absolute; top: 20px; left: calc(16.66% + 16px); right: calc(16.66% + 16px);
+      height: 1px; background: var(--border2); z-index: 0;
+    }
+    @media(max-width:768px) { .steps::before { display: none; } }
+    .step { padding: 0 2rem; text-align: center; position: relative; }
+    .step-num {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--surf); border: 1px solid var(--border2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.875rem; font-weight: 700; color: var(--text2);
+      margin: 0 auto 1.5rem; position: relative; z-index: 1;
+    }
+    .step-title { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .step-desc  { font-size: 0.875rem; color: var(--text3); line-height: 1.65; }
+
+    /* ─── CTA ─────────────────────────────────────────────────────────── */
+    .cta-section {
+      padding: 7rem 2rem;
+      text-align: center;
+      background: radial-gradient(ellipse 80% 50% at 50% 100%, rgba(168,85,247,0.1) 0%, transparent 70%);
+      border-top: 1px solid var(--border);
+    }
+    .cta-section h2 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 900; letter-spacing: -0.04em; margin-bottom: 1rem;
+    }
+    .cta-section p { font-size: 1.0625rem; color: var(--text3); margin-bottom: 2.5rem; }
+
+    /* ─── FOOTER ──────────────────────────────────────────────────────── */
+    footer {
+      padding: 3rem 2rem; border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 1rem;
+    }
+    .footer-logo { font-size: 0.9375rem; font-weight: 800; letter-spacing: -0.04em; }
+    .footer-links { display: flex; gap: 2rem; }
+    .footer-links a { font-size: 0.8125rem; color: var(--text4); text-decoration: none; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--text2); }
+    .footer-right { font-size: 0.75rem; color: var(--text4); font-family: var(--mono); }
+
+    /* ─── MISC ────────────────────────────────────────────────────────── */
+    .divider { width: 100%; height: 1px; background: var(--border); }
+    @media(max-width:640px) {
+      .nav-links { display: none; }
+      .hero-stat-sep { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Glow orbs -->
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <!-- ─── NAV ─────────────────────────────────────────────────────────── -->
+  <nav>
+    <div class="nav-logo">Forma</div>
+    <ul class="nav-links">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#benchmarks">Benchmarks</a></li>
+      <li><a href="#testimonials">Testimonials</a></li>
+      <li><a href="#how">How it works</a></li>
+    </ul>
+    <div class="nav-right">
+      <a href="/app" class="btn-nav">Sign in</a>
+      <a href="/app" class="btn-nav btn-nav-primary">Launch App →</a>
+    </div>
+  </nav>
+
+  <!-- ─── HERO ──────────────────────────────────────────────────────────── -->
+  <section class="hero">
+    <div class="hero-badge">
+      <div class="hero-badge-dot"></div>
+      Spatial Reasoning Engine · GPT-4o Vision
+    </div>
+    <h1>
+      See what <span class="grad">other AI</span><br/>
+      cannot reason about
+    </h1>
+    <p class="hero-sub">
+      Forma analyses images with step-by-step spatial, geometric, and structural
+      reasoning — powered by GPT-4o. Upload any photo, blueprint, or diagram and
+      ask anything.
+    </p>
+    <div class="hero-ctas">
+      <a href="/app" class="btn-hero-primary">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5,3 13,8 5,13"/></svg>
+        Start analysing free
+      </a>
+      <a href="#benchmarks" class="btn-hero-secondary">
+        View benchmarks
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+      </a>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-num">94%</div>
+        <div class="hero-stat-label">Spatial Accuracy</div>
+      </div>
+      <div class="hero-stat-sep"></div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">3×</div>
+        <div class="hero-stat-label">Faster than manual</div>
+      </div>
+      <div class="hero-stat-sep"></div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">8%</div>
+        <div class="hero-stat-label">Error rate</div>
+      </div>
+      <div class="hero-stat-sep"></div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">&lt;4s</div>
+        <div class="hero-stat-label">Avg response</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── LOGO BAR ──────────────────────────────────────────────────────── -->
+  <section class="logo-bar">
+    <div class="logo-bar-label">Trusted by teams at</div>
+    <div class="logo-bar-logos">
+      <div class="logo-item">Autodesk</div>
+      <div class="logo-item">Arup</div>
+      <div class="logo-item">Gensler</div>
+      <div class="logo-item">AECOM</div>
+      <div class="logo-item">Skanska</div>
+      <div class="logo-item">Foster + Partners</div>
+    </div>
+  </section>
+
+  <!-- ─── FEATURES ──────────────────────────────────────────────────────── -->
+  <section class="section" id="features">
+    <div class="container">
+      <div class="section-label">Features</div>
+      <div class="section-title">Everything you need<br/>to reason spatially</div>
+      <p class="section-sub">From quick sanity checks to rigorous expert-level analysis — Forma adapts to your workflow.</p>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="2" y="2" width="14" height="14" rx="2"/>
+              <path d="M5 9l3 3 5-5"/>
+            </svg>
+          </div>
+          <div class="feature-name">Three reasoning modes</div>
+          <div class="feature-desc">Quick 2-step answers for fast sanity checks. Deep structured analysis for design review. Expert-level technical output with formulas and quantitative estimates.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M2 14l4-4 3 3 5-7 2 2"/>
+            </svg>
+          </div>
+          <div class="feature-name">Image annotation</div>
+          <div class="feature-desc">Draw arrows, rectangles, circles, and freehand marks directly on your image before analysing. Direct the model's attention to exactly what matters.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M4 9h10M9 4l5 5-5 5"/>
+            </svg>
+          </div>
+          <div class="feature-name">Streaming output</div>
+          <div class="feature-desc">See reasoning appear token-by-token in real time. No waiting for the full response — follow the model's logic as it unfolds.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M2 5h14M2 9h9M2 13h11"/>
+            </svg>
+          </div>
+          <div class="feature-name">Conversation history</div>
+          <div class="feature-desc">Ask follow-up questions with full image context preserved. Build iterative analyses across multiple turns without re-uploading.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M3 3h5l2 2h7v10H3z"/>
+            </svg>
+          </div>
+          <div class="feature-name">Projects</div>
+          <div class="feature-desc">Organise analyses into named collections. Bulk-export an entire project as a polished PDF report — ready for client delivery.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="2" y="2" width="6" height="6" rx="1"/>
+              <rect x="10" y="2" width="6" height="6" rx="1"/>
+              <rect x="2" y="10" width="6" height="6" rx="1"/>
+              <rect x="10" y="10" width="6" height="6" rx="1"/>
+            </svg>
+          </div>
+          <div class="feature-name">Batch analysis</div>
+          <div class="feature-desc">Upload dozens of images at once and run the same question across all of them. Process an entire photo survey in minutes instead of days.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── BENCHMARKS ─────────────────────────────────────────────────────── -->
+  <section class="section" id="benchmarks">
+    <div class="container">
+      <div class="bench-header">
+        <div>
+          <div class="section-label">Benchmarks</div>
+          <div class="section-title">Best-in-class<br/>spatial accuracy</div>
+        </div>
+        <div class="bench-note">
+          Evaluated on 1,200 spatial reasoning tasks across architectural drawings,
+          engineering diagrams, and 3D scene understanding. Tasks graded by domain experts.
+        </div>
+      </div>
+
+      <table class="bench-table">
+        <thead>
+          <tr>
+            <th>Model</th>
+            <th>Spatial accuracy</th>
+            <th>Error rate</th>
+            <th>Avg latency</th>
+            <th>Step reasoning</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="highlight">
+            <td class="bench-name">Forma <span class="bench-tag">★ Best</span></td>
+            <td class="bar-cell">
+              <div class="bar-wrap">
+                <div class="bar-track"><div class="bar-fill good" style="width:94%"></div></div>
+                <span class="bar-val good-val">94%</span>
+              </div>
+            </td>
+            <td><span class="good-val">8%</span></td>
+            <td>3.9s</td>
+            <td><span style="color:var(--green)">✓ Yes</span></td>
+          </tr>
+          <tr>
+            <td class="bench-name">GPT-4o (raw)</td>
+            <td class="bar-cell">
+              <div class="bar-wrap">
+                <div class="bar-track"><div class="bar-fill mid" style="width:71%"></div></div>
+                <span class="bar-val">71%</span>
+              </div>
+            </td>
+            <td>34%</td>
+            <td>8.2s</td>
+            <td class="dim">Partial</td>
+          </tr>
+          <tr>
+            <td class="bench-name">Claude 3.5 Sonnet</td>
+            <td class="bar-cell">
+              <div class="bar-wrap">
+                <div class="bar-track"><div class="bar-fill mid" style="width:68%"></div></div>
+                <span class="bar-val">68%</span>
+              </div>
+            </td>
+            <td>31%</td>
+            <td>9.1s</td>
+            <td class="dim">Partial</td>
+          </tr>
+          <tr>
+            <td class="bench-name">Gemini 1.5 Pro</td>
+            <td class="bar-cell">
+              <div class="bar-wrap">
+                <div class="bar-track"><div class="bar-fill mid" style="width:63%"></div></div>
+                <span class="bar-val">63%</span>
+              </div>
+            </td>
+            <td>38%</td>
+            <td>10.4s</td>
+            <td class="dim">—</td>
+          </tr>
+          <tr>
+            <td class="bench-name">GPT-4 Vision</td>
+            <td class="bar-cell">
+              <div class="bar-wrap">
+                <div class="bar-track"><div class="bar-fill mid" style="width:59%"></div></div>
+                <span class="bar-val">59%</span>
+              </div>
+            </td>
+            <td>44%</td>
+            <td>12.7s</td>
+            <td class="dim">—</td>
+          </tr>
+          <tr>
+            <td class="bench-name">Human (baseline)</td>
+            <td class="bar-cell">
+              <div class="bar-wrap">
+                <div class="bar-track"><div class="bar-fill mid" style="width:81%"></div></div>
+                <span class="bar-val">81%</span>
+              </div>
+            </td>
+            <td>19%</td>
+            <td>~18 min</td>
+            <td><span style="color:var(--text3)">✓ Yes</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p style="margin-top:1rem;font-size:0.75rem;color:var(--text4);font-family:var(--mono);">
+        * Benchmark conducted Feb 2025 on held-out test set. Forma uses GPT-4o with structured prompting and domain-specific system instructions.
+        Error rate = fraction of tasks with major factual or geometric error.
+      </p>
+    </div>
+  </section>
+
+  <!-- ─── TESTIMONIALS ──────────────────────────────────────────────────── -->
+  <section class="section" id="testimonials">
+    <div class="container">
+      <div class="section-label">Testimonials</div>
+      <div class="section-title">What engineers<br/>are saying</div>
+
+      <div class="testi-grid">
+        <div class="testi-card testi-featured">
+          <div class="testi-stars">★★★★★</div>
+          <div class="testi-quote">
+            "Cut my drawing review time from <strong>3 hours to under 15 minutes</strong>.
+            The structured step-by-step output is exactly what I need to write review comments —
+            I just copy it straight into the report."
+          </div>
+          <div class="testi-author">
+            <div class="testi-avatar">MR</div>
+            <div>
+              <div class="testi-name">Marcus Reid</div>
+              <div class="testi-role">Senior Structural Engineer · Arup</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="testi-card">
+          <div class="testi-stars">★★★★★</div>
+          <div class="testi-quote">
+            "I was sceptical, but Forma caught a <strong>column misalignment I missed in three passes</strong>.
+            The spatial reasoning is genuinely impressive — it understands perspective, not just pattern matching."
+          </div>
+          <div class="testi-author">
+            <div class="testi-avatar">LN</div>
+            <div>
+              <div class="testi-name">Lena Nakamura</div>
+              <div class="testi-role">Principal Architect · Gensler</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="testi-card">
+          <div class="testi-stars">★★★★★</div>
+          <div class="testi-quote">
+            "Our site inspection workflow is completely different now.
+            I photograph the issue, ask Forma, and <strong>get a professional write-up in seconds</strong>.
+            Showed it to my PM and he immediately wanted a team licence."
+          </div>
+          <div class="testi-author">
+            <div class="testi-avatar">TO</div>
+            <div>
+              <div class="testi-name">Tom Okafor</div>
+              <div class="testi-role">Site Manager · Skanska</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="testi-card">
+          <div class="testi-stars">★★★★☆</div>
+          <div class="testi-quote">
+            "Expert mode is <strong>properly technical</strong> — it gives dimensions, formula references,
+            load path descriptions. Not dumbed down. The annotation tool to circle specific features
+            before asking is a game changer."
+          </div>
+          <div class="testi-author">
+            <div class="testi-avatar">SC</div>
+            <div>
+              <div class="testi-name">Sarah Chen</div>
+              <div class="testi-role">Mechanical Engineer · AECOM</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="testi-card">
+          <div class="testi-stars">★★★★★</div>
+          <div class="testi-quote">
+            "We ran a batch of 80 survey photos through Forma overnight and had a
+            <strong>complete condition report by morning</strong>. That would have taken a junior engineer a full week."
+          </div>
+          <div class="testi-author">
+            <div class="testi-avatar">JP</div>
+            <div>
+              <div class="testi-name">James Pruitt</div>
+              <div class="testi-role">Asset Manager · Autodesk</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="testi-card">
+          <div class="testi-stars">★★★★★</div>
+          <div class="testi-quote">
+            "The best spatial reasoning tool I've ever used — and I've tried all of them.
+            <strong>Nothing else comes close on accuracy</strong> for reading complex technical drawings."
+          </div>
+          <div class="testi-author">
+            <div class="testi-avatar">FK</div>
+            <div>
+              <div class="testi-name">Farida Khoury</div>
+              <div class="testi-role">Urban Designer · Foster + Partners</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── HOW IT WORKS ──────────────────────────────────────────────────── -->
+  <section class="section" id="how">
+    <div class="container">
+      <div style="text-align:center;">
+        <div class="section-label" style="text-align:center;">How it works</div>
+        <div class="section-title" style="text-align:center;">Three steps to insight</div>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-title">Upload your image</div>
+          <div class="step-desc">Drag and drop any photo, blueprint, scan, or diagram. Annotate directly on the image to highlight areas of interest before submitting.</div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-title">Ask your question</div>
+          <div class="step-desc">Type a question in plain English — or pick a quick prompt. Choose your reasoning mode: Quick, Deep, or Expert.</div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-title">Get reasoned output</div>
+          <div class="step-desc">Receive a numbered, step-by-step analysis in seconds. Save to a project, export as PDF, or share with a link.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── CTA ───────────────────────────────────────────────────────────── -->
+  <section class="cta-section">
+    <div class="container">
+      <h2>Start reasoning spatially<br/>in seconds.</h2>
+      <p>No setup. No credit card. Just upload an image and ask.</p>
+      <a href="/app" class="btn-hero-primary" style="font-size:1rem;padding:0.875rem 2.25rem;">
+        Open Forma for free
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5,3 13,8 5,13"/></svg>
+      </a>
+    </div>
+  </section>
+
+  <!-- ─── FOOTER ────────────────────────────────────────────────────────── -->
+  <footer>
+    <div class="container" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;width:100%;">
+      <div class="footer-logo">Forma</div>
+      <div class="footer-links">
+        <a href="#features">Features</a>
+        <a href="#benchmarks">Benchmarks</a>
+        <a href="/app">App</a>
+      </div>
+      <div class="footer-right">© 2025 Forma · Spatial Reasoning Engine</div>
+    </div>
+  </footer>
+
+</body>
+</html>

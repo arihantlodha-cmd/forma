@@ -12,7 +12,7 @@ _pw      = os.environ.get("FORMA_PASSWORD", "")
 if not _api_key:
     print("WARNING: OPENAI_API_KEY is not set.")
 
-app    = Flask(__name__, static_folder="renderer", static_url_path="")
+app    = Flask(__name__, static_folder="renderer", static_url_path="/static")
 client = OpenAI(api_key=_api_key or "missing")
 
 # ── Reasoning modes ────────────────────────────────────────────────────────────
@@ -224,7 +224,20 @@ def _validate_image(f):
 
 @app.route("/")
 def index():
+    return send_from_directory(".", "landing.html")
+
+@app.route("/app")
+def app_page():
     return send_from_directory("renderer", "index.html")
+
+# Serve renderer static files (CSS, JS) at their relative paths
+@app.route("/styles/<path:filename>")
+def renderer_styles(filename):
+    return send_from_directory("renderer/styles", filename)
+
+@app.route("/js/<path:filename>")
+def renderer_js(filename):
+    return send_from_directory("renderer/js", filename)
 
 @app.route("/ping")
 def ping():
