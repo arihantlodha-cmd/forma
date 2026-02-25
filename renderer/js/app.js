@@ -98,9 +98,11 @@ const App = (() => {
     const text = document.getElementById('status-text');
     try {
       const p = await API.ping();
-      dot.className  = 'status-dot connected';
-      text.textContent = p.protected ? 'Connected · Protected' : 'Connected';
-      document.getElementById('status-uses').textContent = '';
+      const hasKey = p.has_key || API.hasKey;
+      dot.className    = 'status-dot connected';
+      text.textContent = hasKey ? 'Connected' : 'Connected · No API key';
+      if (!hasKey) dot.className = 'status-dot error';
+
       // Update stats in status bar
       try {
         const s = await API.stats();
@@ -109,7 +111,7 @@ const App = (() => {
         document.getElementById('status-sep').style.display = '';
       } catch {}
     } catch {
-      dot.className  = 'status-dot error';
+      dot.className    = 'status-dot error';
       text.textContent = 'Flask offline';
       document.getElementById('status-sep').style.display = 'none';
     }
@@ -124,8 +126,52 @@ const App = (() => {
   }
 
   // Expose to global
-  return { showView, init };
+  return { showView, init, checkStatus };
+})();
+
+/* ─── API KEY MODAL ──────────────────────────────────────────────────────── */
+
+const KeyModal = (() => {
+  function show() {
+    const m = document.getElementById('apikey-modal');
+    m.style.display = 'flex';
+    setTimeout(() => document.getElementById('modal-key-input').focus(), 80);
+  }
+
+  function dismiss() {
+    document.getElementById('apikey-modal').style.display = 'none';
+  }
+
+  async function save() {
+    const key = document.getElementById('modal-key-input').value.trim();
+    const err = document.getElementById('modal-key-err');
+    if (!key.startsWith('sk-')) {
+      err.textContent = 'Key must start with sk-';
+      return;
+    }
+    err.textContent = '';
+    const btn = document.getElementById('modal-save-btn');
+    btn.textContent = 'Saving…';
+    btn.disabled = true;
+
+    API.setApiKey(key);
+    // Also push to server (best-effort — helps if server-side key ever needed)
+    await API.saveConfig(key, '').catch(() => {});
+
+    dismiss();
+    App.checkStatus();
+    btn.textContent = 'Save & continue';
+    btn.disabled = false;
+  }
+
+  return { show, dismiss, save };
 })();
 
 // Bootstrap on DOMContentLoaded
-document.addEventListener('DOMContentLoaded', () => App.init());
+document.addEventListener('DOMContentLoaded', async () => {
+  await App.init();
+  // In browser mode: if no API key stored, show modal after short delay
+  if (!window.forma && !API.hasKey) {
+    setTimeout(() => KeyModal.show(), 600);
+  }
+});

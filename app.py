@@ -98,6 +98,13 @@ def _authed(req) -> bool:
         return True
     return req.headers.get("X-Forma-Key", "") == _pw
 
+def _get_client(req):
+    """Return an OpenAI client, preferring a per-request key from X-OpenAI-Key header."""
+    req_key = req.headers.get("X-OpenAI-Key", "").strip()
+    if req_key:
+        return OpenAI(api_key=req_key)
+    return client
+
 # ── File validation ────────────────────────────────────────────────────────────
 
 def _ext_ok(name: str) -> bool:
@@ -241,7 +248,7 @@ def renderer_js(filename):
 
 @app.route("/ping")
 def ping():
-    return jsonify({"protected": bool(_pw), "ok": True})
+    return jsonify({"protected": bool(_pw), "has_key": bool(_api_key), "ok": True})
 
 @app.route("/auth", methods=["POST"])
 def auth():
@@ -465,7 +472,7 @@ def batch():
 
         data_url = f"data:{mime};base64,{base64.b64encode(raw).decode()}"
         try:
-            resp = client.chat.completions.create(
+            resp = _get_client(request).chat.completions.create(
                 model="gpt-4o",
                 messages=[
                     {"role": "system", "content": _PROMPTS.get(mode, _PROMPTS["deep"])},
@@ -534,9 +541,11 @@ def analyze():
             ]},
         ]
 
+    ai = _get_client(request)
+
     def _stream():
         try:
-            stream = client.chat.completions.create(
+            stream = ai.chat.completions.create(
                 model="gpt-4o", messages=msgs,
                 max_tokens=_MAX_TOKENS[mode], stream=True, timeout=60,
             )

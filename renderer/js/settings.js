@@ -3,6 +3,10 @@
 const Settings = (() => {
 
   async function load() {
+    // Pre-fill key input with stored key (masked)
+    const stored = API.getApiKey();
+    if (stored) document.getElementById('settings-key').placeholder = '••••••••••• (key saved)';
+
     // Load stats
     try {
       const s = await API.stats();
@@ -16,8 +20,9 @@ const Settings = (() => {
     try {
       const p = await API.ping();
       const el = document.getElementById('api-status');
-      el.textContent = p.ok ? '● Connected' : '✕ Not connected';
-      el.className   = `api-status ${p.ok ? 'ok' : 'err'}`;
+      const hasKey = p.has_key || API.hasKey;
+      el.textContent = hasKey ? '● Key configured' : '✕ No API key set';
+      el.className   = `api-status ${hasKey ? 'ok' : 'err'}`;
     } catch {
       const el = document.getElementById('api-status');
       el.textContent = '✕ Flask offline';
@@ -28,13 +33,16 @@ const Settings = (() => {
   async function saveKey() {
     const key = document.getElementById('settings-key').value.trim();
     if (!key) return;
-    const ok = await API.saveConfig(key, document.getElementById('settings-pw').value.trim());
-    if (ok) {
-      document.getElementById('settings-key').value = '';
-      alert('API key saved. Restart Forma to apply.');
-    } else {
-      alert('Failed to save. Check that the Flask server is running.');
-    }
+    // Store in browser for per-request use
+    API.setApiKey(key);
+    // Also push to server (for Electron or server-side key)
+    await API.saveConfig(key, '').catch(() => {});
+    document.getElementById('settings-key').value = '';
+    // Update status indicator
+    const el = document.getElementById('api-status');
+    el.textContent = '● Key saved';
+    el.className   = 'api-status ok';
+    App.checkStatus();
   }
 
   async function savePw() {

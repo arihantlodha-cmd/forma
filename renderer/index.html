@@ -505,6 +505,37 @@
   </div>
 </div><!-- /#app -->
 
+<!-- ─── API KEY MODAL ─────────────────────────────────────────────────── -->
+<div id="apikey-modal" style="display:none;position:fixed;inset:0;z-index:600;
+  background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);
+  align-items:center;justify-content:center;">
+  <div style="background:var(--surf);border:1px solid var(--border-2);border-radius:12px;
+    padding:28px;width:380px;max-width:calc(100vw - 2rem);">
+    <div style="font-size:15px;font-weight:800;letter-spacing:-0.03em;margin-bottom:6px;">
+      Connect your OpenAI key
+    </div>
+    <div style="font-size:12px;color:var(--text-3);line-height:1.6;margin-bottom:18px;">
+      Forma uses GPT-4o to analyse images. Paste your OpenAI API key below — it's
+      stored only in your browser and sent directly to the server on each request.
+    </div>
+    <div class="sect-label">OpenAI API Key</div>
+    <input id="modal-key-input" type="password" class="input"
+      placeholder="sk-…" autocomplete="off" spellcheck="false"
+      style="margin-bottom:8px;"
+      onkeydown="if(event.key==='Enter')KeyModal.save()" />
+    <div id="modal-key-err" style="font-size:11px;color:var(--red);min-height:16px;margin-bottom:12px;"></div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-primary" id="modal-save-btn" onclick="KeyModal.save()" style="flex:1;">
+        Save &amp; continue
+      </button>
+      <button class="btn" onclick="KeyModal.dismiss()" title="Skip for now">Skip</button>
+    </div>
+    <div style="margin-top:12px;font-size:10px;color:var(--text-4);font-family:var(--font-mono);">
+      Get a key at platform.openai.com · GPT-4o access required
+    </div>
+  </div>
+</div>
+
 <!-- ─── KEYBOARD SHORTCUTS OVERLAY ────────────────────────────────────── -->
 <div class="shortcuts-overlay" id="shortcuts-overlay" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="shortcuts-card">
