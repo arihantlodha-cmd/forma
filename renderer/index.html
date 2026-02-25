@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Forma</title>
+  <link rel="stylesheet" href="styles/tokens.css" />
+  <link rel="stylesheet" href="styles/main.css" />
+</head>
+<body>
+<div id="app">
+
+  <!-- ─── TITLE BAR ───────────────────────────────────────────────────── -->
+  <div id="titlebar">
+    <!-- macOS traffic lights (hidden on Windows via JS) -->
+    <div class="titlebar-traffic" id="traffic">
+      <button class="traffic-btn traffic-close"  onclick="window.forma.close()"    title="Close"></button>
+      <button class="traffic-btn traffic-min"    onclick="window.forma.minimize()" title="Minimise"></button>
+      <button class="traffic-btn traffic-max"    onclick="window.forma.maximize()" title="Maximise"></button>
+    </div>
+    <div class="titlebar-wordmark">Forma</div>
+    <!-- Windows controls -->
+    <div class="win-controls" id="win-controls">
+      <button class="win-btn" onclick="window.forma.minimize()" title="Minimise">&#x2212;</button>
+      <button class="win-btn" onclick="window.forma.maximize()" title="Maximise">&#x25A1;</button>
+      <button class="win-btn close" onclick="window.forma.close()" title="Close">&#x2715;</button>
+    </div>
+  </div>
+
+  <!-- ─── SIDEBAR ─────────────────────────────────────────────────────── -->
+  <nav id="sidebar">
+    <div class="sidebar-top">
+      <button class="nav-item active" data-view="analyzer" onclick="App.showView('analyzer')">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/>
+          <rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/>
+        </svg>
+        <span class="nav-label">Analyse</span>
+      </button>
+      <button class="nav-item" data-view="history" onclick="App.showView('history')">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="8" cy="8" r="5.5"/><path d="M8 5v3.5l2 1.5"/>
+        </svg>
+        <span class="nav-label">History</span>
+      </button>
+      <button class="nav-item" data-view="projects" onclick="App.showView('projects')">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M2 4.5A1.5 1.5 0 013.5 3h3l1.5 1.5H13A1.5 1.5 0 0114.5 6v5A1.5 1.5 0 0113 12.5H3A1.5 1.5 0 011.5 11V4.5z"/>
+        </svg>
+        <span class="nav-label">Projects</span>
+      </button>
+      <button class="nav-item" data-view="batch" onclick="App.showView('batch')">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M2 5h12M2 8h8M2 11h10"/><rect x="11" y="7" width="4" height="4" rx="0.5"/>
+        </svg>
+        <span class="nav-label">Batch</span>
+      </button>
+    </div>
+    <div class="sidebar-bottom">
+      <button class="nav-item" data-view="settings" onclick="App.showView('settings')">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="8" cy="8" r="2"/>
+          <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/>
+        </svg>
+        <span class="nav-label">Settings</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ─── MAIN ─────────────────────────────────────────────────────────── -->
+  <div id="main">
+
+    <!-- ── ANALYZER VIEW ─────────────────────────────────────────────── -->
+    <div id="view-analyzer" class="view" style="display:flex;flex:1;overflow:hidden;">
+
+      <!-- Input Panel -->
+      <div class="panel" id="panel-input">
+        <div class="panel-header">
+          <span class="panel-title">Input</span>
+          <div class="panel-actions">
+            <button class="btn btn-ghost" id="btn-clear" onclick="Analyzer.reset()" title="Clear">
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M3 8a5 5 0 1010 0A5 5 0 003 8zM10 6L6 10M6 6l4 4"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="panel-body" style="padding:10px;display:flex;flex-direction:column;gap:10px;">
+
+          <!-- Upload zone -->
+          <div>
+            <div class="sect-label">Image</div>
+            <div class="upload-zone" id="upload-zone">
+              <input type="file" id="file-input" accept="image/*" onchange="Analyzer.onFile(this.files[0])" />
+              <div class="uz-title">Drop image or click to browse</div>
+              <div class="uz-sub">PNG, JPG, WebP, GIF · max 20 MB</div>
+              <div class="uz-hints">
+                <span class="kbd">⌘O</span><span style="font-size:9px;color:var(--text-4)">open file</span>
+              </div>
+            </div>
+            <!-- Preview (shown after file selected) -->
+            <div class="preview-wrap" id="preview-wrap">
+              <div class="preview-img-wrap">
+                <img id="preview-img" alt="preview" />
+                <canvas id="ann-canvas"></canvas>
+              </div>
+              <div class="ann-toolbar" id="ann-toolbar">
+                <button class="ann-tool" id="tool-arrow" title="Arrow" onclick="Ann.setTool('arrow')">
+                  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 10L10 2M10 2H6M10 2v4"/></svg>
+                </button>
+                <button class="ann-tool" id="tool-rect" title="Rectangle" onclick="Ann.setTool('rect')">
+                  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="8" height="8" rx="1"/></svg>
+                </button>
+                <button class="ann-tool" id="tool-circle" title="Circle" onclick="Ann.setTool('circle')">
+                  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="6" r="4"/></svg>
+                </button>
+                <button class="ann-tool" id="tool-pen" title="Freehand" onclick="Ann.setTool('pen')">
+                  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 10L8 4l2 2-6 4-2-4z"/></svg>
+                </button>
+                <div class="ann-spacer"></div>
+                <button class="ann-tool" title="Undo" onclick="Ann.undo()">
+                  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 5H8a2 2 0 010 4H5"/><path d="M4 3L2 5l2 2"/></svg>
+                </button>
+                <button class="ann-tool" title="Clear annotations" onclick="Ann.clear()">
+                  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 2l8 8M10 2L2 10"/></svg>
+                </button>
+              </div>
+              <div class="preview-bar">
+                <span class="preview-name" id="preview-name">image.png</span>
+                <span class="compress-info" id="compress-info"></span>
+                <button class="btn btn-ghost" style="padding:2px 6px;font-size:10px;" onclick="Ann.toggleToolbar()" title="Annotate">
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 9L8 3l2 2-6 4-2-2z"/><path d="M7 4l1 1"/></svg>
+                  Annotate
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Question -->
+          <div>
+            <div class="sect-label">Question</div>
+            <textarea id="question" class="textarea" rows="3"
+              placeholder="What are the spatial relationships in this image?"
+              onkeydown="if(event.key==='Enter'&&(event.metaKey||event.ctrlKey))Analyzer.submit()"></textarea>
+          </div>
+
+          <!-- Quick prompts -->
+          <div>
+            <div class="sect-label">Quick prompts</div>
+            <div class="chips">
+              <button class="chip" onclick="Analyzer.setQ('What are the dimensions and proportions?')">Dimensions</button>
+              <button class="chip" onclick="Analyzer.setQ('Describe the spatial layout and arrangement.')">Layout</button>
+              <button class="chip" onclick="Analyzer.setQ('What structural elements are visible?')">Structure</button>
+              <button class="chip" onclick="Analyzer.setQ('Identify and describe any geometric shapes.')">Geometry</button>
+              <button class="chip" onclick="Analyzer.setQ('Estimate scale, distances, and measurements.')">Scale</button>
+              <button class="chip" onclick="Analyzer.setQ('What materials or surfaces can you identify?')">Materials</button>
+            </div>
+          </div>
+
+          <!-- Mode -->
+          <div>
+            <div class="sect-label">Reasoning mode</div>
+            <div class="mode-tabs">
+              <button class="mode-tab" data-mode="quick" onclick="Analyzer.setMode('quick')">
+                <span class="mt-name">Quick</span>
+                <span class="mt-desc">2–3 steps</span>
+              </button>
+              <button class="mode-tab active" data-mode="deep" onclick="Analyzer.setMode('deep')">
+                <span class="mt-name">Deep</span>
+                <span class="mt-desc">Full reasoning</span>
+              </button>
+              <button class="mode-tab" data-mode="expert" onclick="Analyzer.setMode('expert')">
+                <span class="mt-name">Expert</span>
+                <span class="mt-desc">Technical</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Project assignment -->
+          <div>
+            <div class="sect-label">Project (optional)</div>
+            <select id="project-select" class="input" style="cursor:pointer;">
+              <option value="">— None —</option>
+            </select>
+          </div>
+
+          <div class="spacer"></div>
+
+          <!-- Submit -->
+          <button class="btn-submit-full" id="btn-submit" onclick="Analyzer.submit()">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="6,3 14,8 6,13"/>
+            </svg>
+            <span id="btn-submit-label">Analyse</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Output Panel -->
+      <div class="panel" id="panel-output" style="flex:1;">
+        <div class="panel-header">
+          <span class="panel-title">Output</span>
+          <div class="panel-actions">
+            <span class="out-badge" id="out-mode-badge" style="display:none;"></span>
+            <button class="btn btn-ghost" id="btn-copy" style="display:none;" onclick="Analyzer.copy()" title="Copy">
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="5" y="5" width="8" height="8" rx="1"/><path d="M3 11H2a1 1 0 01-1-1V2a1 1 0 011-1h8a1 1 0 011 1v1"/>
+              </svg>
+            </button>
+            <button class="btn btn-ghost" id="btn-save" style="display:none;" onclick="Analyzer.save()" title="Save">
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M13 13H3a1 1 0 01-1-1V4l3-3h7a1 1 0 011 1v10a1 1 0 01-1 1z"/>
+                <rect x="5" y="8" width="6" height="5"/><rect x="5" y="2" width="4" height="3"/>
+              </svg>
+            </button>
+            <button class="btn btn-ghost" id="btn-export-pdf" style="display:none;" onclick="Analyzer.exportPdf()" title="Export PDF">
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z"/>
+                <path d="M10 2v4h4M6 9h4M6 12h2"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Meta bar (shown while streaming) -->
+        <div class="out-meta" id="out-meta">
+          <div class="meta-dot pulse" id="meta-dot"></div>
+          <span id="meta-mode"></span>
+          <span class="status-sep">·</span>
+          <span id="meta-tokens">0 tokens</span>
+        </div>
+
+        <!-- Conversation thread (prior turns) -->
+        <div class="conv-thread" id="conv-thread"></div>
+
+        <!-- Skeleton loader -->
+        <div class="skel-wrap" id="skel-wrap">
+          <div class="skel" style="width:80%"></div>
+          <div class="skel" style="width:95%"></div>
+          <div class="skel" style="width:60%"></div>
+          <div class="skel" style="width:88%"></div>
+          <div class="skel" style="width:72%"></div>
+        </div>
+
+        <!-- Empty state -->
+        <div class="empty-state" id="empty-state">
+          <div class="empty-icon">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="2" y="2" width="14" height="14" rx="2"/>
+              <path d="M5 9h8M9 5v8"/>
+            </svg>
+          </div>
+          <div class="empty-title">Ready to analyse</div>
+          <div class="empty-sub">Upload an image and ask a question to get started.</div>
+          <div class="empty-specs">
+            <div class="espec"><span class="espec-k">model</span><span class="espec-v"><span class="g">gpt-4o</span></span></div>
+            <div class="espec"><span class="espec-k">vision</span><span class="espec-v"><span class="g">high detail</span></span></div>
+            <div class="espec"><span class="espec-k">modes</span><span class="espec-v">3</span></div>
+          </div>
+        </div>
+
+        <!-- Error bar -->
+        <div class="err-bar" id="err-bar">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="8" cy="8" r="6"/><path d="M8 5v3M8 10.5v.5"/>
+          </svg>
+          <span id="err-text">Error.</span>
+        </div>
+
+        <!-- Response body -->
+        <div class="resp-body" id="resp-body"></div>
+
+        <!-- Output footer -->
+        <div class="out-foot" id="out-foot">
+          <span>
+            <span class="foot-badge" id="foot-mode"></span>
+          </span>
+          <span id="foot-tokens"></span>
+        </div>
+
+        <!-- Share bar -->
+        <div class="share-bar" id="share-bar">
+          <span style="font-size:10px;color:var(--text-4);">Shared:</span>
+          <div class="share-url" id="share-url"></div>
+          <button class="btn btn-ghost" style="padding:2px 6px;font-size:10px;" onclick="Analyzer.copyShareUrl()" id="btn-copy-url">Copy</button>
+        </div>
+
+        <!-- Follow-up -->
+        <div class="followup-section" id="followup-section">
+          <div class="fu-wrap">
+            <textarea class="fu-input" id="fu-input" placeholder="Ask a follow-up question…" rows="1"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();Analyzer.followUp()}"
+              oninput="this.style.height='32px';this.style.height=Math.min(this.scrollHeight,80)+'px'"></textarea>
+            <button class="fu-send" onclick="Analyzer.followUp()" title="Send">
+              <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 6h8M7 3l3 3-3 3"/></svg>
+            </button>
+          </div>
+          <div class="fu-hint">Enter to send · Shift+Enter for newline</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── HISTORY VIEW ───────────────────────────────────────────────── -->
+    <div id="view-history" class="view" style="display:none;flex:1;overflow:hidden;flex-direction:column;">
+      <div class="panel-header">
+        <span class="panel-title">History</span>
+        <div class="panel-actions">
+          <button class="btn btn-ghost" onclick="History.exportAll()" title="Export all to PDF" style="font-size:10px;">Export PDF</button>
+          <button class="btn btn-danger" onclick="History.clearAll()" title="Clear all" style="font-size:10px;">Clear All</button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="search-wrap">
+          <input id="hist-search" class="input search-input" placeholder="Search questions and answers…" oninput="History.search()" />
+          <button class="btn" onclick="History.search()">
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="6.5" cy="6.5" r="4.5"/><path d="M11 11l3 3"/>
+            </svg>
+          </button>
+        </div>
+        <div class="history-filters">
+          <button class="filter-chip active" data-mode="" onclick="History.filterMode(this,'')">All</button>
+          <button class="filter-chip" data-mode="quick" onclick="History.filterMode(this,'quick')">Quick</button>
+          <button class="filter-chip" data-mode="deep" onclick="History.filterMode(this,'deep')">Deep</button>
+          <button class="filter-chip" data-mode="expert" onclick="History.filterMode(this,'expert')">Expert</button>
+        </div>
+        <div id="hist-list"></div>
+      </div>
+    </div>
+
+    <!-- ── PROJECTS VIEW ─────────────────────────────────────────────── -->
+    <div id="view-projects" class="view" style="display:none;flex:1;overflow:hidden;flex-direction:column;">
+      <div class="panel-header">
+        <span class="panel-title">Projects</span>
+        <div class="panel-actions">
+          <button class="btn btn-primary" onclick="Projects.showCreate()" style="font-size:10px;">+ New</button>
+        </div>
+      </div>
+      <div class="panel-body" id="projects-body">
+        <!-- Create form (hidden) -->
+        <div id="project-create-form" style="display:none;margin-bottom:12px;padding:10px;background:var(--surf);border:1px solid var(--border-2);border-radius:6px;">
+          <div class="sect-label">New Project</div>
+          <div style="display:flex;gap:6px;margin-bottom:6px;">
+            <input id="new-proj-emoji" class="input" style="width:44px;text-align:center;" value="📁" />
+            <input id="new-proj-name" class="input" placeholder="Project name" style="flex:1;" />
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-primary" onclick="Projects.create()">Create</button>
+            <button class="btn" onclick="Projects.hideCreate()">Cancel</button>
+          </div>
+        </div>
+        <div id="proj-list"></div>
+      </div>
+    </div>
+
+    <!-- ── BATCH VIEW ────────────────────────────────────────────────── -->
+    <div id="view-batch" class="view" style="display:none;flex:1;overflow:hidden;flex-direction:column;">
+      <div class="panel-header">
+        <span class="panel-title">Batch Analysis</span>
+      </div>
+      <div class="panel-body" style="display:flex;gap:12px;flex-direction:column;">
+        <div class="batch-drop" id="batch-drop">
+          <input type="file" id="batch-input" multiple accept="image/*" onchange="Batch.onFiles(this.files)" />
+          <div style="font-size:12px;font-weight:600;color:var(--text-2);">Drop images or click to browse</div>
+          <div style="font-size:11px;color:var(--text-4);margin-top:3px;">Multiple files supported</div>
+        </div>
+
+        <div class="batch-file-list" id="batch-file-list"></div>
+
+        <div>
+          <div class="sect-label">Shared Question</div>
+          <textarea id="batch-question" class="textarea" rows="2"
+            placeholder="Question to ask for all images…"></textarea>
+        </div>
+
+        <div>
+          <div class="sect-label">Mode</div>
+          <div class="mode-tabs">
+            <button class="mode-tab" data-mode="quick" onclick="Batch.setMode('quick')">
+              <span class="mt-name">Quick</span><span class="mt-desc">Fast</span>
+            </button>
+            <button class="mode-tab active" data-mode="deep" onclick="Batch.setMode('deep')">
+              <span class="mt-name">Deep</span><span class="mt-desc">Full</span>
+            </button>
+            <button class="mode-tab" data-mode="expert" onclick="Batch.setMode('expert')">
+              <span class="mt-name">Expert</span><span class="mt-desc">Technical</span>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <div class="sect-label">Project (optional)</div>
+          <select id="batch-project-select" class="input" style="cursor:pointer;">
+            <option value="">— None —</option>
+          </select>
+        </div>
+
+        <div class="progress-bar" id="batch-progress-bar" style="display:none;">
+          <div class="progress-fill" id="batch-progress-fill" style="width:0%"></div>
+        </div>
+
+        <button class="btn-submit-full" id="btn-batch-submit" onclick="Batch.submit()">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="6,3 14,8 6,13"/>
+          </svg>
+          <span id="btn-batch-label">Run Batch</span>
+        </button>
+
+        <div id="batch-results"></div>
+      </div>
+    </div>
+
+    <!-- ── SETTINGS VIEW ─────────────────────────────────────────────── -->
+    <div id="view-settings" class="view" style="display:none;flex:1;overflow:hidden;flex-direction:column;">
+      <div class="panel-header">
+        <span class="panel-title">Settings</span>
+      </div>
+      <div class="panel-body">
+        <div class="settings-group">
+          <div class="settings-group-title">API</div>
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">OpenAI API Key</div>
+              <div class="settings-hint">Used for GPT-4o vision requests</div>
+            </div>
+            <span class="api-status" id="api-status">checking…</span>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:6px;">
+            <input id="settings-key" type="password" class="input" placeholder="sk-…" style="flex:1;" />
+            <button class="btn btn-primary" onclick="Settings.saveKey()">Save</button>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-group-title">Security</div>
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">Password</div>
+              <div class="settings-hint">Require a password to access Forma</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:6px;">
+            <input id="settings-pw" type="password" class="input" placeholder="Leave blank to disable" style="flex:1;" />
+            <button class="btn btn-primary" onclick="Settings.savePw()">Save</button>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-group-title">Data</div>
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">Total analyses saved</div>
+            </div>
+            <span style="font-size:11px;font-family:var(--font-mono);color:var(--text-2);" id="stat-total">—</span>
+          </div>
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">Database size</div>
+            </div>
+            <span style="font-size:11px;font-family:var(--font-mono);color:var(--text-2);" id="stat-db">—</span>
+          </div>
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">Rate limit</div>
+            </div>
+            <span style="font-size:11px;font-family:var(--font-mono);color:var(--text-2);" id="stat-rate">—</span>
+          </div>
+          <div style="margin-top:10px;">
+            <button class="btn btn-danger" onclick="Settings.clearHistory()">Clear All History</button>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-group-title">About</div>
+          <div class="settings-row">
+            <div class="settings-label">Version</div>
+            <span style="font-size:11px;font-family:var(--font-mono);color:var(--text-4);">1.0.0</span>
+          </div>
+          <div class="settings-row">
+            <div class="settings-label">Model</div>
+            <span style="font-size:11px;font-family:var(--font-mono);color:var(--text-4);">gpt-4o</span>
+          </div>
+          <div style="margin-top:8px;">
+            <button class="btn btn-ghost" onclick="window.forma ? window.forma.navigate('onboarding.html') : (window.location.href='/onboarding')">Re-run Setup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /#main -->
+
+  <!-- ─── STATUS BAR ─────────────────────────────────────────────────── -->
+  <div id="statusbar">
+    <div class="status-left">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">Connecting…</span>
+    </div>
+    <div class="status-center">
+      <span id="status-center-text"></span>
+    </div>
+    <div class="status-right">
+      <span id="status-uses"></span>
+      <span class="status-sep" id="status-sep" style="display:none;">·</span>
+      <span id="status-time"></span>
+    </div>
+  </div>
+</div><!-- /#app -->
+
+<!-- ─── KEYBOARD SHORTCUTS OVERLAY ────────────────────────────────────── -->
+<div class="shortcuts-overlay" id="shortcuts-overlay" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="shortcuts-card">
+    <div class="shortcuts-title">Keyboard Shortcuts</div>
+    <div class="shortcut-group">
+      <div class="shortcut-group-title">General</div>
+      <div class="shortcut-row"><span class="shortcut-label">New analysis</span><div class="shortcut-keys"><kbd class="kbd">⌘N</kbd></div></div>
+      <div class="shortcut-row"><span class="shortcut-label">Open image</span><div class="shortcut-keys"><kbd class="kbd">⌘O</kbd></div></div>
+      <div class="shortcut-row"><span class="shortcut-label">Settings</span><div class="shortcut-keys"><kbd class="kbd">⌘,</kbd></div></div>
+      <div class="shortcut-row"><span class="shortcut-label">Toggle history</span><div class="shortcut-keys"><kbd class="kbd">⌘H</kbd></div></div>
+      <div class="shortcut-row"><span class="shortcut-label">Show shortcuts</span><div class="shortcut-keys"><kbd class="kbd">⌘/</kbd></div></div>
+    </div>
+    <div class="shortcut-group">
+      <div class="shortcut-group-title">Analysis</div>
+      <div class="shortcut-row"><span class="shortcut-label">Run analysis</span><div class="shortcut-keys"><kbd class="kbd">⌘↵</kbd></div></div>
+      <div class="shortcut-row"><span class="shortcut-label">Copy output</span><div class="shortcut-keys"><kbd class="kbd">⌘⇧C</kbd></div></div>
+    </div>
+    <div style="text-align:right;margin-top:16px;">
+      <button class="btn" onclick="document.getElementById('shortcuts-overlay').classList.remove('open')">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/ann.js"></script>
+<script src="js/analyzer.js"></script>
+<script src="js/history.js"></script>
+<script src="js/projects.js"></script>
+<script src="js/batch.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -12,7 +12,7 @@ _pw      = os.environ.get("FORMA_PASSWORD", "")
 if not _api_key:
     print("WARNING: OPENAI_API_KEY is not set.")
 
-app    = Flask(__name__, static_folder=".", static_url_path="")
+app    = Flask(__name__, static_folder="renderer", static_url_path="")
 client = OpenAI(api_key=_api_key or "missing")
 
 # ── Reasoning modes ────────────────────────────────────────────────────────────
@@ -224,7 +224,7 @@ def _validate_image(f):
 
 @app.route("/")
 def index():
-    return send_from_directory(".", "index.html")
+    return send_from_directory("renderer", "index.html")
 
 @app.route("/ping")
 def ping():

@@ -31,3 +31,4 @@ forma.db
 
 # Logs
 *.log
+.vercel

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Forma — Setup</title>
+  <link rel="stylesheet" href="styles/tokens.css" />
+  <link rel="stylesheet" href="styles/main.css" />
+</head>
+<body>
+  <div class="onboarding">
+    <div class="ob-card">
+      <div class="ob-header">
+        <div class="ob-logo">Forma</div>
+        <div class="ob-tagline">Spatial Reasoning Engine</div>
+        <div class="ob-steps">
+          <div class="ob-step-dot active" id="dot-0"></div>
+          <div class="ob-step-dot" id="dot-1"></div>
+          <div class="ob-step-dot" id="dot-2"></div>
+        </div>
+      </div>
+
+      <div class="ob-body">
+        <!-- Step 0: Welcome -->
+        <div class="ob-step active" id="step-0">
+          <div class="ob-step-title">Welcome to Forma</div>
+          <div class="ob-step-desc">
+            Forma uses GPT-4o to analyze images with spatial, geometric, and structural
+            reasoning. Upload a photo, sketch, blueprint, or diagram — then ask anything.
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;">
+            <div style="display:flex;align-items:center;gap:8px;padding:8px;background:var(--surf-2);border:1px solid var(--border);border-radius:6px;">
+              <span style="font-size:16px;">🔭</span>
+              <div>
+                <div style="font-size:11px;font-weight:700;color:var(--text-2);">Deep Analysis</div>
+                <div style="font-size:10px;color:var(--text-4);">Step-by-step spatial reasoning</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px;background:var(--surf-2);border:1px solid var(--border);border-radius:6px;">
+              <span style="font-size:16px;">📁</span>
+              <div>
+                <div style="font-size:11px;font-weight:700;color:var(--text-2);">Projects</div>
+                <div style="font-size:10px;color:var(--text-4);">Organise analyses into collections</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px;background:var(--surf-2);border:1px solid var(--border);border-radius:6px;">
+              <span style="font-size:16px;">⚡</span>
+              <div>
+                <div style="font-size:11px;font-weight:700;color:var(--text-2);">Batch Mode</div>
+                <div style="font-size:10px;color:var(--text-4);">Analyse multiple images at once</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 1: API key -->
+        <div class="ob-step" id="step-1">
+          <div class="ob-step-title">Connect OpenAI</div>
+          <div class="ob-step-desc">
+            Forma requires an OpenAI API key with access to GPT-4o.
+            Your key is stored locally and never leaves this device.
+          </div>
+          <div style="margin-bottom:10px;">
+            <div class="sect-label">OpenAI API Key</div>
+            <input id="ob-key" type="password" class="input"
+              placeholder="sk-..." autocomplete="off" spellcheck="false" />
+          </div>
+          <div id="ob-key-status" style="font-size:11px;color:var(--text-4);font-family:var(--font-mono);min-height:16px;"></div>
+          <div style="margin-top:10px;">
+            <div class="sect-label">Password (optional)</div>
+            <input id="ob-pw" type="password" class="input"
+              placeholder="Leave blank to disable" autocomplete="off" />
+            <div style="font-size:10px;color:var(--text-4);margin-top:4px;">
+              Set a password to protect access when Forma is accessible on a network.
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Ready -->
+        <div class="ob-step" id="step-2">
+          <div class="ob-step-title">You're all set</div>
+          <div class="ob-step-desc">
+            Forma is configured and ready. Drop an image into the input panel, write
+            a question, and hit Analyse.
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;margin-top:8px;">
+            <div class="espec">
+              <span class="espec-k">Cmd/Ctrl+N</span>
+              <span class="espec-v">New analysis</span>
+            </div>
+            <div class="espec">
+              <span class="espec-k">Cmd/Ctrl+O</span>
+              <span class="espec-v">Open image</span>
+            </div>
+            <div class="espec">
+              <span class="espec-k">Cmd/Ctrl+H</span>
+              <span class="espec-v">Toggle history</span>
+            </div>
+            <div class="espec">
+              <span class="espec-k">Cmd/Ctrl+/</span>
+              <span class="espec-v">Keyboard shortcuts</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ob-footer">
+        <span class="ob-progress" id="ob-progress">Step 1 of 3</span>
+        <div style="display:flex;gap:8px;">
+          <button class="btn" id="ob-back" style="display:none;" onclick="obBack()">Back</button>
+          <button class="btn btn-primary" id="ob-next" onclick="obNext()">Continue</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let obStep = 0;
+    const STEPS = 3;
+
+    function obRender() {
+      for (let i = 0; i < STEPS; i++) {
+        document.getElementById(`step-${i}`).classList.toggle('active', i === obStep);
+        document.getElementById(`dot-${i}`).classList.toggle('active', i === obStep);
+      }
+      document.getElementById('ob-progress').textContent = `Step ${obStep + 1} of ${STEPS}`;
+      document.getElementById('ob-back').style.display = obStep > 0 ? '' : 'none';
+      document.getElementById('ob-next').textContent = obStep === STEPS - 1 ? 'Open Forma' : 'Continue';
+    }
+
+    function obBack() {
+      if (obStep > 0) { obStep--; obRender(); }
+    }
+
+    async function obNext() {
+      if (obStep === 1) {
+        const key = document.getElementById('ob-key').value.trim();
+        if (!key) {
+          document.getElementById('ob-key-status').style.color = 'var(--red)';
+          document.getElementById('ob-key-status').textContent = 'API key is required to continue.';
+          return;
+        }
+        document.getElementById('ob-key-status').style.color = 'var(--text-4)';
+        document.getElementById('ob-key-status').textContent = 'Saving…';
+        // Store key in .env-style config via Flask
+        try {
+          const port = await window.forma.getFlaskPort();
+          const res = await fetch(`http://127.0.0.1:${port}/config`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              api_key: key,
+              password: document.getElementById('ob-pw').value.trim()
+            })
+          });
+          if (!res.ok) throw new Error('Failed to save config');
+          document.getElementById('ob-key-status').style.color = 'var(--green)';
+          document.getElementById('ob-key-status').textContent = '✓ Saved';
+        } catch (e) {
+          document.getElementById('ob-key-status').style.color = 'var(--red)';
+          document.getElementById('ob-key-status').textContent = 'Could not save — you can set OPENAI_API_KEY manually.';
+        }
+      }
+
+      if (obStep < STEPS - 1) {
+        obStep++;
+        obRender();
+      } else {
+        if (window.forma) window.forma.navigate('index.html');
+        else window.location.href = '/';
+      }
+    }
+
+    // Allow Enter to advance
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') obNext();
+    });
+  </script>
+</body>
+</html>

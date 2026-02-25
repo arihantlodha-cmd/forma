@@ -1,0 +1,52 @@
+{
+  "name": "forma",
+  "version": "1.0.0",
+  "description": "Forma — Spatial Reasoning Engine",
+  "main": "main.js",
+  "author": "Arihant Lodha",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dev":   "FLASK_DEBUG=true electron .",
+    "build": "electron-builder",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win",
+    "build:linux": "electron-builder --linux"
+  },
+  "dependencies": {
+    "electron-updater": "^6.1.7"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.arihantlodha.forma",
+    "productName": "Forma",
+    "directories": { "output": "build" },
+    "files": [
+      "main.js", "preload.js",
+      "renderer/**/*",
+      "assets/**/*",
+      "app.py", "requirements.txt",
+      "!build/**", "!venv/**", "!*.db", "!*.log"
+    ],
+    "mac": {
+      "icon": "assets/icon.icns",
+      "target": [{ "target": "dmg", "arch": ["x64", "arm64"] }],
+      "category": "public.app-category.productivity",
+      "titleBarStyle": "hidden"
+    },
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [{ "target": "nsis", "arch": ["x64"] }]
+    },
+    "linux": {
+      "icon": "assets/icon.png",
+      "target": [{ "target": "AppImage" }]
+    },
+    "extraResources": [
+      { "from": "venv", "to": "venv" }
+    ]
+  }
+}

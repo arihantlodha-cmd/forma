@@ -1,0 +1,46 @@
+/* ─── FORMA DESIGN TOKENS ─────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* Backgrounds */
+  --bg:      #000000;
+  --bg-2:    #080808;
+  --surf:    #0d0d0d;
+  --surf-2:  #111111;
+  --surf-3:  #161616;
+
+  /* Borders */
+  --border:  #1c1c1c;
+  --border-2:#222222;
+  --border-3:#2a2a2a;
+
+  /* Text */
+  --text:    #f0f0f0;
+  --text-2:  #a0a0a0;
+  --text-3:  #606060;
+  --text-4:  #404040;
+
+  /* Accent — white only */
+  --accent:  #ffffff;
+  --accent-inv: #000000;
+
+  /* Semantic */
+  --green:   #22c55e;
+  --red:     #ef4444;
+  --amber:   #f59e0b;
+
+  /* Typography */
+  --font-ui:   'Inter',         system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+
+  /* Sizing */
+  --sidebar-w:      48px;
+  --sidebar-w-open: 200px;
+  --titlebar-h:     36px;
+  --statusbar-h:    24px;
+  --radius:         6px;
+  --radius-lg:      10px;
+
+  /* Transitions */
+  --t: 120ms ease;
+}
